@@ -94,10 +94,13 @@ class FrameDecoderPool(
 
             reusableBitmap = bmp
             val requiredBytes = bmp.width * bmp.height * 4
-            var targetBuf = rgbaBuffers[writeBufferIdx]
-            if (targetBuf == null || targetBuf.capacity() < requiredBytes) {
-                targetBuf = ByteBuffer.allocateDirect(requiredBytes).order(ByteOrder.nativeOrder())
-                rgbaBuffers[writeBufferIdx] = targetBuf
+            val existingBuf = rgbaBuffers[writeBufferIdx]
+            val targetBuf: ByteBuffer = if (existingBuf == null || existingBuf.capacity() < requiredBytes) {
+                ByteBuffer.allocateDirect(requiredBytes).order(ByteOrder.nativeOrder()).also {
+                    rgbaBuffers[writeBufferIdx] = it
+                }
+            } else {
+                existingBuf
             }
 
             targetBuf.clear()

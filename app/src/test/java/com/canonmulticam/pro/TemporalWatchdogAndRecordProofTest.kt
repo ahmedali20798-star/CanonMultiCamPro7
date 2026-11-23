@@ -69,7 +69,9 @@ class TemporalWatchdogAndRecordProofTest {
         ): Result<Unit> = Result.success(Unit)
         override suspend fun getBatteryStatus(): Result<Pair<String, Boolean>> = Result.success("85%" to false)
         override suspend fun getRemainingRecordMinutes(): Result<Int?> = Result.success(120)
-        override fun close() {}
+        override fun close() {
+            // No resources need to be released by this fake driver.
+        }
     }
 
     @Test
@@ -138,4 +140,3 @@ class TemporalWatchdogAndRecordProofTest {
 
             actor.destroy()
         }
-}

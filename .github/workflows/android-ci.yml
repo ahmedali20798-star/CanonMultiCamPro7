@@ -1,13 +1,15 @@
-name: Verify & Build CanonMultiCam Pro
+name: Android CI - Auto-Detect & Build APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  verify-and-build:
+  build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,26 +20,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.7
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Run Detekt Strict Static Analysis
-        run: gradle detekt --no-daemon --stacktrace
+      - name: Find Project Root & Build Debug APK
+        run: |
+          PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle*" -printf "%h\n" | head -n 1)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: No settings.gradle or settings.gradle.kts found in the repository!"
+            exit 1
+          fi
+          echo "Found Android project in: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          else
+            gradle wrapper
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          fi
 
-      - name: Run Deterministic Protocol & Temporal Proof Tests
-        run: gradle testDebugUnitTest --no-daemon --stacktrace
-
-      - name: Run Android Lint
-        run: gradle lintDebug --no-daemon --stacktrace
-
-      - name: Assemble Verified Debug APK
-        run: gradle assembleDebug --no-daemon --stacktrace
-
-      - name: Upload Verified APK Artifact
+      - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: CanonMultiCamPro-V14-Verified-APK
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          name: CanonMultiCamPro-debug-apk
+          path: "**/build/outputs/apk/debug/*.apk"

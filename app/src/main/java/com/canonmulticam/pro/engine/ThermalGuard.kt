@@ -20,27 +20,32 @@ class ThermalGuard(context: Context) {
     private val _thermalLevel = MutableStateFlow(ThermalLevel.NORMAL)
     val thermalLevel: StateFlow<ThermalLevel> = _thermalLevel.asStateFlow()
 
-    private val listener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        PowerManager.OnThermalStatusChangedListener { status ->
-            _thermalLevel.value = when {
-                status >= PowerManager.THERMAL_STATUS_SEVERE -> ThermalLevel.HOT
-                status >= PowerManager.THERMAL_STATUS_MODERATE -> ThermalLevel.WARM
-                else -> ThermalLevel.NORMAL
+    private val listener: PowerManager.OnThermalStatusChangedListener? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            PowerManager.OnThermalStatusChangedListener { status ->
+                _thermalLevel.value = when {
+                    status >= PowerManager.THERMAL_STATUS_SEVERE -> ThermalLevel.HOT
+                    status >= PowerManager.THERMAL_STATUS_MODERATE -> ThermalLevel.WARM
+                    else -> ThermalLevel.NORMAL
+                }
             }
+        } else {
+            null
         }
-    } else {
-        null
-    }
 
     init {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && listener != null) {
-            runCatching { powerManager.addThermalStatusListener(listener) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            listener?.let { l ->
+                runCatching { powerManager.addThermalStatusListener(l) }
+            }
         }
     }
 
     fun destroy() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && listener != null) {
-            runCatching { powerManager.removeThermalStatusListener(listener) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            listener?.let { l ->
+                runCatching { powerManager.removeThermalStatusListener(l) }
+            }
         }
     }
 }

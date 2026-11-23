@@ -32,7 +32,7 @@ class GraphicsMathProofTest {
         assertEquals(24, lut.buffer.capacity())
 
         val rgba = ByteBuffer.allocate(64 * 4)
-        for (i in 0 until 64) {
+        repeat(64) {
             rgba.put(255.toByte())
             rgba.put(255.toByte())
             rgba.put(255.toByte())
